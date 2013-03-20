@@ -5,7 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :source-paths ["src/clj"]
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [compojure "1.1.5"]]
+                 [compojure "1.1.5"]
+                 [domina "1.0.2-SNAPSHOT"]]
   :plugins [[lein-cljsbuild "0.3.0"]
             [lein-ring "0.8.3"]]
   :ring {:handler marchgame.core/handler}
