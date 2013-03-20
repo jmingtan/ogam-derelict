@@ -1,6 +1,8 @@
 (ns marchgame.core
   (:use [marchgame.util :only (log get-location unpack-location)])
-  (:require [domina.events :as ev]))
+  (:require [domina.events :as ev]
+            [marchgame.engine :as engine]
+            [marchgame.display :as display]))
 
 (def keymap
   {38 0
@@ -14,80 +16,80 @@
 
 (def game (atom nil))
 
-(defn generate-boxes [state free-cells]
-  (dotimes [i 10]
-    (let [index (get-location free-cells)
-          key (first (.splice free-cells index 1))]
-      (aset (.-map state) key "*")
-      (if (= i 0) (set! (.-ananas state) key)))))
-
-(defn draw-whole-map []
-  (let [main-map (:map @game)]
-    (js/doseq (fn [k]
-                (let [parts (.split k ",")
-                      x (js/parseInt (first parts))
-                      y (js/parseInt (second parts))
-                      d (:display @game)]
-                  (.draw d x y (aget main-map k))))
-      main-map)))
-
 (defn generate-map []
-  (let [generator (js/ROT.Map.Uniform.)
-        main-map (js-obj)
-        free-cells (atom [])]
-    (.create generator (fn [x y value]
-                         (let [k (str x "," y)]
-                           (if (= value 0)
-                             (do (aset main-map k " ")
-                                 (swap! free-cells conj k))
-                             (aset main-map k "#")))))
-    {:map main-map
+  (let [g (js/ROT.Map.Uniform.)
+        result-map (atom {})
+        free-cells (atom [])
+        callback (fn [x y value]
+                   (let [is-wall? (= value 1)]
+                     (if (not is-wall?) (swap! free-cells conj [x y]))
+                     (swap! result-map
+                            assoc [x y] (if is-wall? "#" " "))))]
+    (.create g callback)
+    {:map-data @result-map
      :free-cells @free-cells}))
 
-(defn get-free-location [free-cells]
-  (-> free-cells get-location unpack-location))
+(defn draw-map [map-data]
+  (doseq [[[x y] v] map-data]
+    (display/draw x y v)))
 
-(defn get-actor [id]
+(defn draw-current-map []
+  (draw-map (:map-data @game)))
+
+(defn get-entity [id]
   (-> @game :entities id))
 
-(defn draw-entity [id]
-  (let [s (get-actor id)
-        d (:display @game)]
-    (apply #(.draw d %1 %2 %3 %4)
-           (map #(% s) [:x :y :symbol :colour]))))
+(defn draw-entity [entity]
+  (apply display/draw (map #(% entity) [:x :y :symbol :colour])))
+
+(defn draw-entity-by-id [id]
+  (draw-entity (get-entity id)))
 
 (defn key-down [e]
   (let [code (:keyCode e)
         dir (aget (aget js/ROT.DIRS 8) (keymap code))
-        s (get-actor :player)
-        new-s (assoc s
-                :x (+ (aget dir 0) (:x s))
-                :y (+ (aget dir 1) (:y s)))]
-    (swap! game #(assoc-in % [:entities :player] new-s))
-    (.unlock (:engine @game))))
+        s (get-entity :player)
+        new-x (+ (aget dir 0) (:x s))
+        new-y (+ (aget dir 1) (:y s))
+        movable? (some #{[new-x new-y]} (:free-cells @game))]
+    (if movable?
+      (let [new-s (assoc s :x new-x :y new-y)]
+        (swap! game #(assoc-in % [:entities :player] new-s))
+        (draw-current-map)
+        (engine/unlock))
+      (ev/listen-once! :keydown key-down))))
+
+(defn create-entity
+  ([x y symbol act-fn]
+     (create-entity x y symbol "grey"))
+  ([x y symbol colour act-fn]
+     (let [speed-fn (fn [] 100)]
+       (create-entity x y symbol colour speed-fn act-fn)))
+  ([x y symbol colour speed-fn act-fn]
+     {:x x :y y :symbol symbol :colour colour
+      :actor (js-obj "getSpeed" speed-fn
+                     "act" act-fn)}))
 
 (defn create-player [x y]
-  {:speed 100
-   :x x
-   :y y
-   :symbol "@"
-   :colour "white"
-   :actor (js-obj "getSpeed" #(:speed (get-actor :player))
-                  "act" #(do (draw-entity :player)
-                             (ev/listen-once! :keydown key-down)
-                             (.lock (:engine @game))))})
+  (create-entity x y "@" "white"
+                 #(do (draw-entity-by-id :player)
+                      (ev/listen-once! :keydown key-down)
+                      (engine/lock))))
+
+(defn create-pedro [x y]
+  (create-entity x y "P" "red"
+                 (fn [] (draw-entity-by-id :pedro))))
 
 (defn ^:export init []
-  (let [display (js/ROT.Display.)
-        engine (js/ROT.Engine.)
-        map-result (generate-map)
-        entities {:player (apply create-player (get-free-location
-                                                (:free-cells map-result)))}]
+  (let [map-result (generate-map)
+        free-loc #(get-location (:free-cells map-result))
+        entities {:player (apply create-player (free-loc))
+                  :pedro (apply create-pedro (free-loc))}]
     (reset! game (merge map-result
-                        {:display display
-                         :engine engine
-                         :entities entities}))
-    (.appendChild (.-body js/document) (.getContainer display))
-    (draw-whole-map)
-    (.addActor engine (:actor (get-actor :player)))
-    (.start engine)))
+                        {:entities entities}))
+    (.appendChild (.-body js/document) (display/container))
+    (draw-current-map)
+    (doseq [e (vals entities)]
+      (draw-entity e)
+      (engine/add-actor (:actor e)))
+    (engine/start)))

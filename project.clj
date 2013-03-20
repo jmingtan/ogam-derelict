@@ -6,6 +6,7 @@
   :source-paths ["src/clj"]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [compojure "1.1.5"]
+                 [hiccup "1.0.2"]
                  [domina "1.0.2-SNAPSHOT"]]
   :plugins [[lein-cljsbuild "0.3.0"]
             [lein-ring "0.8.3"]]
@@ -15,7 +16,6 @@
                      :compiler {:output-to "resources/public/js/rogue.js"
                                 :optimizations :whitespace
                                 :pretty-print true}}
-               ;; :prod {:source-paths ["src/cljs"]
-               ;;        :compiler {:output-to "resources/public/js/rogue-min.js"
-               ;;                   :optimizations :advanced}}
-               }})
+               :prod {:source-paths ["src/cljs"]
+                      :compiler {:output-to "resources/public/js/rogue-min.js"
+                                 :optimizations :advanced}}}})
