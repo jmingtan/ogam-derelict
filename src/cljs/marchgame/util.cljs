@@ -9,8 +9,8 @@
       (Math/floor)))
 
 (defn get-location [free-cells]
-  (-> (rrand-int (count free-cells))
-      (free-cells)))
+  (let [index (rrand-int (count free-cells))]
+    (get (vec (keys free-cells)) index)))
 
 (defn unpack-location [l]
   (let [parts (.split l ",")

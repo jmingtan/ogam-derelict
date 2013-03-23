@@ -2,16 +2,22 @@
   (:require [compojure.handler :as handler]
             [compojure.route :as route]
             [compojure.core :refer [defroutes GET]]
-            [hiccup.element :refer [javascript-tag]]
+            [hiccup.element :refer [javascript-tag link-to]]
             [hiccup.page :refer [html5 include-js]]))
 
 (defn page-index []
   (html5
    [:head
     [:meta {:http-equiv "Content-Type" :content "text/html;charset=UTF-8"}]
+    [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
+    [:link {:rel "stylesheet" :href "//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css"}]
     [:title "Derelict"]]
    [:body {:onload "marchgame.core.init();"}
-    (include-js "js/rot.js" "js/rogue.js" "js/game.js")]))
+    [:div.container
+     [:div.row
+      [:div#body.span12
+       [:h1 "Derelict"]]]]
+    (include-js "js/rot.js" "js/rogue.js")]))
 
 (defroutes app-routes
   (GET "/" [] (page-index))
