@@ -8,6 +8,9 @@
 (defn add-actor [actor]
   (.addActor engine actor))
 
+(defn remove-actor [actor]
+  (.removeActor engine actor))
+
 (defn lock []
   (.lock engine))
 

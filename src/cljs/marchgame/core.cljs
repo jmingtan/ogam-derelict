@@ -10,15 +10,19 @@
             [marchgame.display :as display]))
 
 (defn key-down [e]
-  (let [dir (keycodes/get-direction e)]
-    (if (not (nil? dir))
+  (let [[dx dy] (keycodes/get-direction e)]
+    (if (not (or (nil? dx) (nil? dy)))
       (let [s (entity/get-entity :player)
-            new-x (+ (aget dir 0) (:x s))
-            new-y (+ (aget dir 1) (:y s))
-            movable? (mapping/is-passable? new-x new-y)]
+            new-x (+ dx (:x s))
+            new-y (+ dy (:y s))
+            new-s (assoc s :x new-x :y new-y)
+            movable? (mapping/is-passable? new-x new-y)
+            entities (entity/has-entity? new-x new-y)]
         (if movable?
-          (let [new-s (assoc s :x new-x :y new-y)]
-            (entity/modify-entity :player new-s)
+          (do
+            (if (and movable? (= (count entities) 0))
+              (entity/modify-entity! :player new-s)
+              (entity/attack-entity! :player (first (first entities))))
             (mapping/draw-current-map)
             (engine/unlock))
           (ev/listen-once! :keydown key-down)))
@@ -41,13 +45,17 @@
            result-path (path/get-path finder (:x entity) (:y entity))
            [new-x new-y] (second result-path)
            new-e (assoc entity :x new-x :y new-y)]
-       (entity/modify-entity :pedro new-e)
+       (if (> (count result-path) 2)
+         (entity/modify-entity! :pedro new-e)
+         ;; (if (entity/attack-entity! :pedro :player)
+         ;;   (engine/lock))
+         )
        (entity/draw-entity-by-id :pedro)))))
 
 (defn generate-entities [map-coll]
   (let [free-loc #(get-location (:free-cells map-coll))]
-    (entity/add-entity :player (apply create-player (free-loc)))
-    (entity/add-entity :pedro (apply create-pedro (free-loc)))))
+    (doseq [[k v] {:player create-player :pedro create-pedro}]
+      (entity/add-entity! k (apply v (free-loc))))))
 
 (defn ^:export init []
   (let [map-result (-> (mapping/generate-map) (mapping/generate-map-features))]
@@ -56,6 +64,5 @@
     (.appendChild (by-id "body") (display/container))
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
-      (entity/draw-entity v)
-      (entity/add-entity k v))
+      (entity/draw-entity v))
     (engine/start)))

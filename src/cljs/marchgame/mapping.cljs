@@ -1,6 +1,11 @@
 (ns marchgame.mapping
   (:require [marchgame.display :as display]))
 
+(def map-legend
+  {:wall "#"
+   :floor " "
+   :exit ">"})
+
 (def current-map (atom {}))
 
 (defn set-current-map [new-map]
@@ -23,7 +28,9 @@
                      (if (not is-wall?) (swap! free-cells
                                                assoc [x y] nil))
                      (swap! result-map
-                            assoc [x y] (if is-wall? "#" " "))))]
+                            assoc [x y] (if is-wall?
+                                          (:wall map-legend)
+                                          (:floor map-legend)))))]
     (.create g callback)
     {:map-data @result-map
      :rooms (.getRooms g)
@@ -31,7 +38,7 @@
 
 (defn generate-map-features [map-coll]
   (let [rooms (:rooms map-coll)]
-    (assoc-in map-coll [:map-data (place-exit rooms)] ">")))
+    (assoc-in map-coll [:map-data (place-exit rooms)] (:exit map-legend))))
 
 (defn draw-map [map-data]
   (doseq [[[x y] v] map-data]

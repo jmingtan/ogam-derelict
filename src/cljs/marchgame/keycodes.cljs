@@ -13,4 +13,4 @@
 (defn get-direction [e]
   (let [code (:keyCode e)
         dir (aget (aget js/ROT.DIRS 8) (keymap-codes code))]
-    dir))
+    [(aget dir 0) (aget dir 1)]))
