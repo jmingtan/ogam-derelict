@@ -1,10 +1,13 @@
 (ns marchgame.mapping
+  (:use [marchgame.util :only (rrand-int)])
   (:require [marchgame.display :as display]))
 
 (def map-legend
   {:wall "#"
    :floor " "
-   :exit ">"})
+   :exit ">"
+   :loot "$"
+   })
 
 (def current-map (atom {}))
 
@@ -17,9 +20,13 @@
 (defn get-current-map []
   @current-map)
 
-(defn place-exit [rooms]
-  (let [room (aget rooms 0)
-        center (.getCenter room)]
+(defn get-random-room [rooms]
+  (let [index (rrand-int (count rooms))
+        room (aget rooms index)]
+    room))
+
+(defn get-room-center [room]
+  (let [center (.getCenter room)]
     [(aget center 0) (aget center 1)]))
 
 (defn generate-map []
@@ -39,9 +46,11 @@
      :rooms (.getRooms g)
      :free-cells @free-cells}))
 
-(defn generate-map-features [map-coll]
-  (let [rooms (:rooms map-coll)]
-    (assoc-in map-coll [:map-data (place-exit rooms)] (:exit map-legend))))
+(defn generate-map-features [{map-data :map-data rooms :rooms :as map-coll}]
+  (let [center-fn (comp get-room-center get-random-room)
+        with-exit (assoc map-data (center-fn rooms) (:exit map-legend))
+        with-loot (assoc with-exit (center-fn rooms) (:loot map-legend))]
+    (assoc map-coll :map-data with-loot)))
 
 (defn draw-map [map-data]
   (doseq [[x y v] map-data]
