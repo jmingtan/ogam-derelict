@@ -5,6 +5,12 @@
 
 (def entities (atom {}))
 
+(defn get-entity [id]
+  (id @entities))
+
+(defn get-entities []
+  @entities)
+
 (defn modify-entity! [id entity]
   (swap! entities assoc id entity))
 
@@ -12,15 +18,13 @@
   (modify-entity! id entity)
   (engine/add-actor (:actor entity)))
 
+(defn remove-entity! [id]
+  (engine/remove-actor (:actor (get-entity id)))
+  (swap! entities dissoc id))
+
 (defn has-entity? [x y]
   (filter (fn [[k {kx :x ky :y}]] (if (and (= kx x) (= ky y)) k))
           @entities))
-
-(defn get-entity [id]
-  (id @entities))
-
-(defn get-entities []
-  @entities)
 
 (defn draw-entity [entity]
   (apply display/draw (map #(% entity) [:x :y :symbol :colour])))
@@ -46,7 +50,7 @@
     (if (<= tgt-hp 0)
       (do
         (log (str tgt-id " has died!"))
-        (engine/remove-actor (:actor tgt))
+        (remove-entity! tgt-id)
         true)
       (let [new-e (assoc tgt :hp tgt-hp)]
         (modify-entity! tgt-id new-e)

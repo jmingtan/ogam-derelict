@@ -8,8 +8,11 @@
 
 (def current-map (atom {}))
 
-(defn set-current-map [new-map]
-  (reset! current-map new-map))
+(defn optimize-map-data [{map-data :map-data}]
+  (apply array (map (fn [[[x y] v]] [x y v]) map-data)))
+
+(defn set-current-map! [new-map]
+  (reset! current-map (assoc new-map :_optimized (optimize-map-data new-map))))
 
 (defn get-current-map []
   @current-map)
@@ -41,11 +44,11 @@
     (assoc-in map-coll [:map-data (place-exit rooms)] (:exit map-legend))))
 
 (defn draw-map [map-data]
-  (doseq [[[x y] v] map-data]
+  (doseq [[x y v] map-data]
     (display/draw x y v)))
 
 (defn draw-current-map []
-  (draw-map (:map-data @current-map)))
+  (draw-map (:_optimized @current-map)))
 
 (defn is-passable? [x y]
   (contains? (:free-cells @current-map) [x y]))

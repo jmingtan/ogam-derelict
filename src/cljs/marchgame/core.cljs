@@ -10,10 +10,10 @@
             [marchgame.display :as display]))
 
 (defn key-down [e]
-  (let [[dx dy] (keycodes/get-direction e)]
-    (if (not (or (nil? dx) (nil? dy)))
-      (let [s (entity/get-entity :player)
-            new-x (+ dx (:x s))
+  (let [[dx dy] (keycodes/get-direction e)
+        s (entity/get-entity :player)]
+    (if (not (or (nil? dx) (nil? dy)) (nil? s))
+      (let [new-x (+ dx (:x s))
             new-y (+ dy (:y s))
             new-s (assoc s :x new-x :y new-y)
             movable? (mapping/is-passable? new-x new-y)
@@ -60,7 +60,7 @@
 (defn ^:export init []
   (let [map-result (-> (mapping/generate-map) (mapping/generate-map-features))]
     (generate-entities map-result)
-    (mapping/set-current-map map-result)
+    (mapping/set-current-map! map-result)
     (.appendChild (by-id "body") (display/container))
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
