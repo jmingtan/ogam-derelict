@@ -1,5 +1,5 @@
 (ns marchgame.mapping
-  (:use [marchgame.util :only (rrand-int)])
+  (:use [marchgame.util :only (rrand-int log)])
   (:require [marchgame.display :as display]))
 
 (def map-legend
@@ -30,7 +30,7 @@
     [(aget center 0) (aget center 1)]))
 
 (defn generate-map []
-  (let [g (js/ROT.Map.Uniform.)
+  (let [g (js/ROT.Map.Cellular.)
         result-map (atom {})
         free-cells (atom {})
         callback (fn [x y value]
@@ -41,9 +41,12 @@
                             assoc [x y] (if is-wall?
                                           (:wall map-legend)
                                           (:floor map-legend)))))]
+    (.randomize g 0.45)
+    ;; (dotimes [i 2]
+    ;;   (.create g (fn [& rest])))
     (.create g callback)
     {:map-data @result-map
-     :rooms (.getRooms g)
+     ;; :rooms (.getRooms g)
      :free-cells @free-cells}))
 
 (defn generate-map-features [{map-data :map-data rooms :rooms :as map-coll}]
