@@ -2,9 +2,12 @@
   (:use [domina :only (by-id append!)]))
 
 (defn log [& elems]
-  (let [line (clojure.string/join " " elems)]
+  (let [line (clojure.string/join " " elems)
+        msg-elem (by-id "messages")
+        msg-container (by-id "message-span")]
     (.log js/console line)
-    (append! (by-id "messages") (format "<tr><td>%s</td></tr>" line))))
+    (append! msg-elem (format "<tr><td>%s</td></tr>" line))
+    (set! (.-scrollTop msg-container) (.-scrollHeight msg-container))))
 
 (defn rrand-int [n]
   (-> (js/ROT.RNG.getUniform)
