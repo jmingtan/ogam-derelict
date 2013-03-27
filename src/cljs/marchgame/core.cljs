@@ -63,8 +63,14 @@
     (doseq [[k v] {:player create-player :pedro create-pedro}]
       (entity/add-entity! k (apply v (free-loc))))))
 
+(defn place-loot [{map-data :map-data :as map-coll}]
+  (let [free-loc #(get-location (:free-cells map-coll))
+        chosen (free-loc)
+        with-loot (assoc-in map-coll [:map-data chosen] :loot)]
+    with-loot))
+
 (defn ^:export init []
-  (let [map-result (-> (mapping/generate-map) )]
+  (let [map-result (-> (mapping/generate-map) (place-loot))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
     (.appendChild (by-id "body") (display/container))

@@ -3,13 +3,15 @@
   (:require [marchgame.display :as display]))
 
 (def map-legend
-  {:wall "#"
-   :floor " "
-   :exit ">"
-   :loot "$"
-   })
+  {:wall {:symbol "#" :colour "brown"}
+   :floor {:symbol " " :colour "brown"}
+   :exit {:symbol ">" :colour "brown"}
+   :loot {:symbol "$" :colour "yellow"}})
 
 (def current-map (atom {}))
+
+(defn get-symbol [id]
+  (-> map-legend id :symbol))
 
 (defn optimize-map-data [{map-data :map-data}]
   (apply array (map (fn [[[x y] v]] [x y v]) map-data)))
@@ -39,11 +41,11 @@
                                                assoc [x y] nil))
                      (swap! result-map
                             assoc [x y] (if is-wall?
-                                          (:wall map-legend)
-                                          (:floor map-legend)))))]
-    (.randomize g 0.45)
-    ;; (dotimes [i 2]
-    ;;   (.create g (fn [& rest])))
+                                          :wall
+                                          :floor))))]
+    (.randomize g 0.3)
+    (dotimes [i 2]
+      (.create g (fn [& rest])))
     (.create g callback)
     {:map-data @result-map
      ;; :rooms (.getRooms g)
@@ -51,13 +53,14 @@
 
 (defn generate-map-features [{map-data :map-data rooms :rooms :as map-coll}]
   (let [center-fn (comp get-room-center get-random-room)
-        with-exit (assoc map-data (center-fn rooms) (:exit map-legend))
-        with-loot (assoc with-exit (center-fn rooms) (:loot map-legend))]
+        with-exit (assoc map-data (center-fn rooms) (get-symbol :exit))
+        with-loot (assoc with-exit (center-fn rooms) (get-symbol :loot))]
     (assoc map-coll :map-data with-loot)))
 
 (defn draw-map [map-data]
-  (doseq [[x y v] map-data]
-    (display/draw x y v)))
+  (doseq [[x y v] map-data
+          {sym :symbol col :colour} (:wall map-legend)]
+    (display/draw x y (-> map-legend v :symbol) (-> map-legend v :colour))))
 
 (defn draw-current-map []
   (draw-map (:_optimized @current-map)))
