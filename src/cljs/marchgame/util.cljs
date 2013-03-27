@@ -1,7 +1,10 @@
-(ns marchgame.util)
+(ns marchgame.util
+  (:use [domina :only (by-id append!)]))
 
-(defn log [s]
-  (.log js/console s))
+(defn log [& elems]
+  (let [line (clojure.string/join " " elems)]
+    (.log js/console line)
+    (append! (by-id "messages") (format "<tr><td>%s</td></tr>" line))))
 
 (defn rrand-int [n]
   (-> (js/ROT.RNG.getUniform)

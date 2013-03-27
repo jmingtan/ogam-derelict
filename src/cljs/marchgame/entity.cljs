@@ -46,10 +46,10 @@
 (defn attack-entity! [src-id tgt-id]
   (let [[src tgt] (map get-entity [src-id tgt-id])
         tgt-hp (- (:hp tgt) 5)]
-    (log (str src-id " has attacked " tgt-id " (hp left: " tgt-hp ")"))
+    (log (str (name src-id) " has attacked " (name tgt-id) " (hp left: " tgt-hp ")"))
     (if (<= tgt-hp 0)
       (do
-        (log (str tgt-id " has died!"))
+        (log (str (name tgt-id) " has died!"))
         (remove-entity! tgt-id)
         true)
       (let [new-e (assoc tgt :hp tgt-hp)]
