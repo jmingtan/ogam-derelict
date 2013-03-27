@@ -51,11 +51,12 @@
            finder (path/astar px py mapping/is-passable?)
            result-path (path/get-path finder (:x entity) (:y entity))
            [new-x new-y] (second result-path)
-           new-e (assoc entity :x new-x :y new-y)]
-       (if (> (count result-path) 2)
-         (entity/modify-entity! :pedro new-e)
-         (if (entity/attack-entity! :pedro :player)
-           (engine/lock)))
+           new-e (assoc entity :x new-x :y new-y)
+           path-len (count result-path)]
+       (cond
+        (> path-len 2) (entity/modify-entity! :pedro new-e)
+        (= path-len 2) (if (entity/attack-entity! :pedro :player)
+                         (engine/lock)))
        (entity/draw-entity-by-id :pedro)))))
 
 (defn generate-entities [map-coll]
