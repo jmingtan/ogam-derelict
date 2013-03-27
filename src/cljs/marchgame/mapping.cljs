@@ -3,10 +3,10 @@
   (:require [marchgame.display :as display]))
 
 (def map-legend
-  {:wall {:symbol "#" :colour "brown"}
-   :floor {:symbol " " :colour "brown"}
-   :exit {:symbol ">" :colour "brown"}
-   :loot {:symbol "$" :colour "yellow"}})
+  {:wall {:symbol "#" :colour "brown" :passable? false}
+   :floor {:symbol " " :colour "brown" :passable? true}
+   :exit {:symbol ">" :colour "brown" :passable? true}
+   :loot {:symbol "$" :colour "yellow" :passable? true}})
 
 (def current-map (atom {}))
 
@@ -21,6 +21,9 @@
 
 (defn get-current-map []
   @current-map)
+
+(defn get-elem [x y]
+  ((:map-data @current-map) [x y]))
 
 (defn get-random-room [rooms]
   (let [index (rrand-int (count rooms))
@@ -66,4 +69,4 @@
   (draw-map (:_optimized @current-map)))
 
 (defn is-passable? [x y]
-  (contains? (:free-cells @current-map) [x y]))
+  (:passable? (map-legend (get-elem x y))))
