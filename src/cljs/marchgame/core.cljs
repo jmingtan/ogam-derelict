@@ -16,18 +16,14 @@
       (let [new-x (+ dx (:x s))
             new-y (+ dy (:y s))
             new-s (assoc s :x new-x :y new-y)
-            current-map (mapping/get-current-map)
-            dest-cell ((:map-data current-map) [new-x new-y])
+            dest-cell (mapping/get-cell new-x new-y)
             movable? (mapping/is-passable? new-x new-y)
             entities (entity/has-entity? new-x new-y)]
         (cond
          (> (count entities) 0) (entity/attack-entity!
                                  :player (first (first entities)))
          (= :loot dest-cell) (do (loot/random-loot!)
-                                 (mapping/set-current-map!
-                                  (assoc-in
-                                   current-map [:map-data [new-x new-y]]
-                                   :floor))
+                                 (mapping/set-cell! new-x new-y :floor)
                                  (entity/modify-entity! :player new-s))
          movable? (entity/modify-entity! :player new-s))
         (if movable?

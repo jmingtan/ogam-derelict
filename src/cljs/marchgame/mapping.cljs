@@ -70,3 +70,9 @@
 
 (defn is-passable? [x y]
   (:passable? (map-legend (get-elem x y))))
+
+(defn get-cell [x y]
+  ((:map-data @current-map) [x y]))
+
+(defn set-cell! [x y value]
+  (set-current-map! (assoc-in @current-map [:map-data [x y]] value)))
