@@ -61,9 +61,9 @@
     (assoc map-coll :map-data with-loot)))
 
 (defn draw-map [map-data]
-  (doseq [[x y v] map-data
-          {sym :symbol col :colour} (:wall map-legend)]
-    (display/draw x y (-> map-legend v :symbol) (-> map-legend v :colour))))
+  (doseq [[x y v] map-data]
+    (let [{s :symbol c :colour} (v map-legend)]
+      (display/draw x y s c))))
 
 (defn draw-current-map []
   (draw-map (:_optimized @current-map)))
