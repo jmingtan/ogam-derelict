@@ -28,7 +28,8 @@
          movable? (entity/modify-entity! :player new-s))
         (if movable?
           (do (mapping/draw-current-map)
-              (engine/unlock)))))))
+              (engine/unlock))
+          (log "You cannot go that way."))))))
 
 (defn key-down [e]
   (let [[dx dy] (keycodes/get-direction e)]
