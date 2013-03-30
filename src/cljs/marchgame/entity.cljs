@@ -13,6 +13,10 @@
 (defn get-entities []
   @entities)
 
+(defn clear-entities! []
+  (reset! entities {})
+  (engine/clear-actors))
+
 (defn modify-entity! [id entity]
   (swap! entities assoc id entity))
 

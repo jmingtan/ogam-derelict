@@ -16,6 +16,9 @@
 (defn remove-actor [actor]
   (.removeActor engine actor))
 
+(defn clear-actors []
+  (.clear engine))
+
 (defn lock []
   (reset! lock-atom 0)
   (.lock engine))

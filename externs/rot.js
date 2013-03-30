@@ -8,6 +8,7 @@ ROT.Engine.removeActor = function() {};
 ROT.Engine.start = function() {};
 ROT.Engine.lock = function() {};
 ROT.Engine.unlock = function() {};
+ROT.Engine.clear = function() {};
 ROT.DIRS = {};
 ROT.Path = function() {};
 ROT.Path.AStar = function() {};
