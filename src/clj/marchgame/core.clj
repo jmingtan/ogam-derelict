@@ -28,7 +28,7 @@
                             [:td {:align "center"} m]
                             [:td r]])
              [[[:button#nw.btn "NW"] [:button#n.btn [:i.icon-caret-up]] [:button#ne.btn "NE"]]
-              [[:button#w.btn [:i.icon-caret-left]] [:button#wait.btn [:i.icon-signin]] [:button#e.btn [:i.icon-caret-right]]]
+              [[:button#w.btn [:i.icon-caret-left]] [:button#exit.btn [:i.icon-signin]] [:button#e.btn [:i.icon-caret-right]]]
               [[:button#sw.btn "SW"] [:button#s.btn [:i.icon-caret-down]] [:button#se.btn "SE"]]])]]
       [:div#message-span.span9
        [:table#messages]]]]

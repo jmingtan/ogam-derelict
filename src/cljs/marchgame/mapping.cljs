@@ -5,7 +5,7 @@
 (def map-legend
   {:wall {:symbol "#" :colour "brown" :passable? false}
    :floor {:symbol " " :colour "brown" :passable? true}
-   :exit {:symbol ">" :colour "brown" :passable? true}
+   :exit {:symbol ">" :colour "white" :passable? true}
    :loot {:symbol "$" :colour "yellow" :passable? true}})
 
 (def current-map (atom {}))

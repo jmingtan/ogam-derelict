@@ -31,13 +31,23 @@
               (engine/unlock))
           (log "You cannot go that way."))))))
 
+(defn exit []
+  (let [{x :x y :y :as s} (entity/get-entity :player)
+        current-cell (mapping/get-cell x y)
+        on-exit? (= current-cell :exit)]
+    (if on-exit?
+      (log "exit reached"))))
+
 (defn key-down [e]
-  (let [[dx dy] (keycodes/get-direction e)]
-    (if (not (or (nil? dx) (nil? dy)))
-      (move dx dy))))
+  (let [[dx dy] (keycodes/get-direction e)
+        keycode (:keyCode e)]
+    (cond
+     (= keycode 190) (exit)
+     (not (or (nil? dx) (nil? dy))) (move dx dy))))
 
 (defn register-handlers []
   (ev/listen! :keydown key-down)
+  (ev/listen! (by-id "exit") :click (fn [e] (exit)))
   (doseq [[id [x y]] {"n" [0 -1] "s" [0 1] "e" [1 0] "w" [-1 0]
                       "ne" [1 -1] "nw" [-1 -1] "se" [1 1] "sw" [-1 1]}]
     (ev/listen! (by-id id) :click (fn [e] (move x y)))))
@@ -70,14 +80,14 @@
     (doseq [[k v] {:player create-player :pedro create-pedro}]
       (entity/add-entity! k (apply v (free-loc))))))
 
-(defn place-loot [{map-data :map-data :as map-coll}]
+(defn place-elem [{map-data :map-data :as map-coll} elem]
   (let [free-loc #(get-location (:free-cells map-coll))
         chosen (free-loc)
-        with-loot (assoc-in map-coll [:map-data chosen] :loot)]
-    with-loot))
+        with-elem (assoc-in map-coll [:map-data chosen] elem)]
+    with-elem))
 
 (defn ^:export init []
-  (let [map-result (-> (mapping/generate-map) (place-loot))]
+  (let [map-result (-> (mapping/generate-map) (place-elem :loot) (place-elem :exit))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
     (.appendChild (by-id "body") (display/container))
