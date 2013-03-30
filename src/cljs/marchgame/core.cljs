@@ -52,32 +52,10 @@
                       "ne" [1 -1] "nw" [-1 -1] "se" [1 1] "sw" [-1 1]}]
     (ev/listen! (by-id id) :click (fn [e] (move x y)))))
 
-(defn create-player [x y]
-  (entity/create-entity
-   x y "@" "white"
-   #(do (entity/draw-entity-by-id :player)
-        (engine/lock))))
-
-(defn create-pedro [x y]
-  (entity/create-entity
-   x y "P" "red"
-   (fn []
-     (let [{px :x py :y} (entity/get-entity :player)
-           entity (entity/get-entity :pedro)
-           finder (path/astar px py mapping/is-passable?)
-           result-path (path/get-path finder (:x entity) (:y entity))
-           [new-x new-y] (second result-path)
-           new-e (assoc entity :x new-x :y new-y)
-           path-len (count result-path)]
-       (cond
-        (> path-len 2) (entity/modify-entity! :pedro new-e)
-        (= path-len 2) (if (entity/attack-entity! :pedro :player)
-                         (engine/lock)))
-       (entity/draw-entity-by-id :pedro)))))
-
 (defn generate-entities [map-coll]
   (let [free-loc #(get-location (:free-cells map-coll))]
-    (doseq [[k v] {:player create-player :pedro create-pedro}]
+    (doseq [[k v] {:player entity/create-player
+                   :pedro entity/create-pedro}]
       (entity/add-entity! k (apply v (free-loc))))))
 
 (defn place-elem [{map-data :map-data :as map-coll} elem]
@@ -86,13 +64,16 @@
         with-elem (assoc-in map-coll [:map-data chosen] elem)]
     with-elem))
 
-(defn ^:export init []
+(defn overhead-map []
   (let [map-result (-> (mapping/generate-map) (place-elem :loot) (place-elem :exit))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
-    (.appendChild (by-id "body") (display/container))
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
-      (entity/draw-entity v))
-    (register-handlers)
-    (engine/start)))
+      (entity/draw-entity v))))
+
+(defn ^:export init []
+  (.appendChild (by-id "body") (display/container))
+  (overhead-map)
+  (register-handlers)
+  (engine/start))

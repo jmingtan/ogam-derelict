@@ -1,7 +1,9 @@
 (ns marchgame.entity
   (:use [marchgame.util :only (log)])
   (:require [marchgame.display :as display]
-            [marchgame.engine :as engine]))
+            [marchgame.engine :as engine]
+            [marchgame.path :as path]
+            [marchgame.mapping :as mapping]))
 
 (def entities (atom {}))
 
@@ -55,3 +57,28 @@
       (let [new-e (assoc tgt :hp tgt-hp)]
         (modify-entity! tgt-id new-e)
         false))))
+
+(defn create-player [x y]
+  (create-entity
+   x y "@" "white"
+   #(do (draw-entity-by-id :player)
+        (engine/lock))))
+
+(defn enemy-logic [id]
+  (let [{px :x py :y} (get-entity :player)
+        {x :x y :y :as entity} (get-entity id)
+        finder (path/astar px py mapping/is-passable?)
+        result-path (path/get-path finder x y)
+        [new-x new-y] (second result-path)
+        new-e (assoc entity :x new-x :y new-y)
+        path-len (count result-path)]
+    (cond
+     (> path-len 2) (modify-entity! id new-e)
+     (= path-len 2) (if (attack-entity! id :player)
+                      (engine/lock)))
+    (draw-entity-by-id id)))
+
+(defn create-pedro [x y]
+  (create-entity
+   x y "P" "red"
+   (partial enemy-logic :pedro)))
