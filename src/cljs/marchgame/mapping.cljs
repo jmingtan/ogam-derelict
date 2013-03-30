@@ -34,31 +34,35 @@
   (let [center (.getCenter room)]
     [(aget center 0) (aget center 1)]))
 
-(defn generate-map []
-  (let [g (js/ROT.Map.Cellular.)
-        result-map (atom {})
-        free-cells (atom {})
-        callback (fn [x y value]
-                   (let [is-wall? (= value 1)]
-                     (if (not is-wall?) (swap! free-cells
-                                               assoc [x y] nil))
-                     (swap! result-map
-                            assoc [x y] (if is-wall?
-                                          :wall
-                                          :floor))))]
+(defn generate-cellular-map [callback]
+  (let [g (js/ROT.Map.Cellular.)]
     (.randomize g 0.3)
     (dotimes [i 2]
       (.create g (fn [& rest])))
-    (.create g callback)
-    {:map-data @result-map
-     ;; :rooms (.getRooms g)
-     :free-cells @free-cells}))
+    (.create g callback)))
 
-(defn generate-map-features [{map-data :map-data rooms :rooms :as map-coll}]
-  (let [center-fn (comp get-room-center get-random-room)
-        with-exit (assoc map-data (center-fn rooms) (get-symbol :exit))
-        with-loot (assoc with-exit (center-fn rooms) (get-symbol :loot))]
-    (assoc map-coll :map-data with-loot)))
+(defn generate-uniform-map [callback]
+  (let [g (js/ROT.Map.Uniform.)]
+    (.create g callback)))
+
+(defn generate-map
+  ([] (generate-map :cell))
+  ([map-type]
+     (let [result-map (atom {})
+           free-cells (atom {})
+           callback (fn [x y value]
+                      (let [is-wall? (= value 1)]
+                        (if (not is-wall?) (swap! free-cells
+                                                  assoc [x y] nil))
+                        (swap! result-map
+                               assoc [x y] (if is-wall?
+                                             :wall
+                                             :floor))))]
+       (condp = map-type
+         :cell (generate-cellular-map callback)
+         :uniform (generate-uniform-map callback)
+         nil)
+       {:map-data @result-map :free-cells @free-cells})))
 
 (defn draw-map [map-data]
   (doseq [[x y v] map-data]
