@@ -17,5 +17,6 @@
                                 :optimizations :whitespace
                                 :pretty-print true}}
                :prod {:source-paths ["src/cljs"]
-                      :compiler {:output-to "resources/public/js/rogue-min.js"
-                                 :optimizations :advanced}}}})
+                      :compiler {:output-to "resources/public/js/rogue.min.js"
+                                 :optimizations :advanced
+                                 :externs ["externs/rot.js"]}}}})
