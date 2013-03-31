@@ -87,6 +87,8 @@
       :warp
       (do
         (timed-log "You escape from the sector, riches in your grasp!")
+        (entity/unwatch-entities)
+        (entity/remove-entity! :player)
         (loot/calculate-score))
       :exit
       (if (nil? h)
