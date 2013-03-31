@@ -32,10 +32,12 @@
   (entity/modify-entity!
    :player (assoc (entity/get-entity :player) :hp hp)))
 
-(defn generate-entities [map-coll]
+(defn generate-entities [map-coll n]
   (let [free-loc #(get-location (:free-cells map-coll))
-        entities {:player entity/create-player
-                  :pirate (partial entity/create-enemy :pirate)}]
+        pirates (reduce (fn [coll e] (let [k (keyword (format "pirate%d" e))]
+                                       (assoc coll k (partial entity/create-enemy k))))
+                        {} (range n))
+        entities (assoc pirates :player entity/create-player)]
     (doseq [[k v] entities]
       (entity/add-entity! k (apply v (free-loc))))))
 
@@ -53,7 +55,7 @@
                        (place-elems (rand-nth (range 4 7)) :loot)
                        (place-elems 4 :exit)
                        (place-elem :aexit))]
-    (generate-entities map-result)
+    (generate-entities map-result 1)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
@@ -63,7 +65,7 @@
   (let [map-result (-> (mapping/generate-map :uniform)
                        (place-elems (rand-nth (range 3 5)) :loot)
                        (place-elem :exit))]
-    (generate-entities map-result)
+    (generate-entities map-result 1)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
@@ -73,7 +75,7 @@
   (let [map-result (-> (mapping/generate-map :divided)
                        (place-elems 10 :loot)
                        (place-elem :artifact))]
-    (generate-entities map-result)
+    (generate-entities map-result 1)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
