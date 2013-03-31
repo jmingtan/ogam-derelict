@@ -110,6 +110,7 @@
           (entity/clear-entities!)
           (derelict-map)
           (set-player-hp (:hp @status))
+          (swap! status assoc :location :land)
           (entity/watch-entities update-health)
           (engine/unlock))
         (do
@@ -123,6 +124,7 @@
             (entity/draw-entity v))
           (reset! history nil)
           (set-player-hp (:ship @status))
+          (swap! status assoc :location :space)
           (entity/watch-entities update-health)))
       :aexit
       (do
@@ -134,6 +136,7 @@
         (entity/clear-entities!)
         (artifact-map)
         (set-player-hp (:hp @status))
+        (swap! status assoc :location :land)
         (entity/watch-entities update-health)
         (engine/unlock))
       nil)))
@@ -166,11 +169,11 @@
                                        (mapping/set-current-map! (place-elem (:map @history) :warp))
                                        (mapping/draw-current-map)
                                        (doseq [[k v] (merge (generate-entities (:map @history) false 10 0) (:entities @history))]
-                                       ;; (doseq [[k v] (:entities @history)]
                                          (entity/add-entity! k v)
                                          (entity/draw-entity v))
                                        (reset! history nil)
                                        (set-player-hp (:ship @status))
+                                       (swap! status assoc :location :space)
                                        (entity/watch-entities update-health)))
          movable? (entity/modify-entity! :player new-s))
         (if movable?
@@ -179,12 +182,16 @@
               (engine/unlock))
           (log "You cannot go that way."))
         (if (and hp-recover? (> hp 0))
-          (let [add-hp (rand-nth (range 2 5))]
+          (let [new-hp (+ hp (rand-nth (range 2 5)))]
             (condp = (:location @status)
               :space (if (< hp orig-ship)
-                       (set-player-hp (+ hp add-hp)))
+                       (if (> new-hp orig-ship)
+                         (set-player-hp orig-ship)
+                         (set-player-hp new-hp)))
               :land (if (< hp orig-hp)
-                      (set-player-hp (+ hp add-hp)))
+                      (if (> new-hp orig-hp)
+                         (set-player-hp orig-hp)
+                         (set-player-hp new-hp)))
              nil)))))))
 
 (defn key-down [e]
@@ -204,8 +211,8 @@
 (defn ^:export init []
   (.appendChild (by-id "body") (display/container))
   (overhead-map)
-  (let [player-orig 2000
-        ship-orig 3500]
+  (let [player-orig 20
+        ship-orig 35]
     (reset! status {:orig-hp player-orig :hp player-orig
                     :orig-ship ship-orig :ship ship-orig
                     :artifact? false :steps 0 :location :space})
