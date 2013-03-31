@@ -34,7 +34,9 @@
        [:table#status
         [:tbody
          [:tr [:th "Ship"] [:td#ship "35/35"]]
-         [:tr [:th "Player"] [:td#hp "20/20"]]]]]
+         [:tr [:th "Player"] [:td#hp "20/20"]]
+         [:tr [:th {:colspan 2} "Treasure"]]
+         [:tr [:td#treasure {:colspan 2} "None"]]]]]
       [:div#message-span.span9
        [:table#messages]]]]
     (include-js "js/rot.js" "js/rogue.js")]))

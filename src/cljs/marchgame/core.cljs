@@ -11,13 +11,13 @@
             [marchgame.display :as display]))
 
 (def history (atom nil))
-(def health (atom {}))
+(def status (atom {}))
 
 (defn update-health [key a old new]
   (let [update-fn (fn [hp-type]
                     (let [{hp :hp} (:player new)
                           kw (-> (format "orig-%s" (name hp-type)) keyword)
-                          {orig kw} (swap! health assoc hp-type hp)
+                          {orig kw} (swap! status assoc hp-type hp)
                           elem (by-id (name hp-type))
                           line (format "%d/%d" hp orig)]
                       (set! (.-innerHTML elem) line)))]
@@ -97,7 +97,7 @@
                            :map (mapping/get-current-map)})
           (entity/clear-entities!)
           (derelict-map)
-          (set-player-hp (:hp @health))
+          (set-player-hp (:hp @status))
           (entity/watch-entities update-health)
           (engine/unlock))
         (do
@@ -110,7 +110,7 @@
             (entity/add-entity! k v)
             (entity/draw-entity v))
           (reset! history nil)
-          (set-player-hp (:ship @health))
+          (set-player-hp (:ship @status))
           (entity/watch-entities update-health)
           (engine/unlock))))))
 
@@ -133,7 +133,7 @@
   (overhead-map)
   (let [player-orig 20
         ship-orig 35]
-    (reset! health {:orig-hp player-orig :hp player-orig
+    (reset! status {:orig-hp player-orig :hp player-orig
                     :orig-ship ship-orig :ship ship-orig})
     (entity/modify-entity!
      :player (assoc (entity/get-entity :player) :hp ship-orig)))
