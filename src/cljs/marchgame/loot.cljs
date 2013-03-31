@@ -1,5 +1,5 @@
 (ns marchgame.loot
-  (:use [marchgame.util :only (log)]
+  (:use [marchgame.util :only (log timed-log)]
         [domina :only (by-id)]))
 
 (def gold-name "scrap")
@@ -16,3 +16,7 @@
   (let [amt (rand-nth [5 10 15 20])]
     (log (format "Picked up %s %s." amt gold-name))
     (add-loot! amt)))
+
+(defn calculate-score []
+  (timed-log (format "Final score is %d."
+                     (* 10 (:gold @lootbag)))))

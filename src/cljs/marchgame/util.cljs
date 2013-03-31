@@ -14,7 +14,7 @@
         msg-elem (by-id "messages")
         msg-container (by-id "message-span")]
     (.log js/console line)
-    (js/displayText "messages" (str line "\n"))
+    (js/displayText "messages" line)
     (set! (.-scrollTop msg-container) (.-scrollHeight msg-container))))
 
 (defn rrand-int [n]

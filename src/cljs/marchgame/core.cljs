@@ -21,7 +21,9 @@
                           {orig kw} (swap! status assoc hp-type hp)
                           elem (by-id (name hp-type))
                           line (format "%d/%d" hp orig)]
-                      (set! (.-innerHTML elem) line)))]
+                      (set! (.-innerHTML elem) line)
+                      (if (= hp 0)
+                        (loot/calculate-score))))]
     (if (nil? @history)
       (update-fn :ship)
       (update-fn :hp))))
@@ -33,7 +35,7 @@
 (defn generate-entities [map-coll]
   (let [free-loc #(get-location (:free-cells map-coll))]
     (doseq [[k v] {:player entity/create-player
-                   :pedro entity/create-pedro}]
+                   :pirate (partial entity/create-enemy :pirate)}]
       (entity/add-entity! k (apply v (free-loc))))))
 
 (defn place-elem [{map-data :map-data :as map-coll} elem]
@@ -62,6 +64,16 @@
     (doseq [[k v] (entity/get-entities)]
       (entity/draw-entity v))))
 
+(defn artifact-map []
+  (let [map-result (-> (mapping/generate-map :uniform)
+                       (place-elem :loot)
+                       (place-elem :exit))]
+    (generate-entities map-result)
+    (mapping/set-current-map! map-result)
+    (mapping/draw-current-map)
+    (doseq [[k v] (entity/get-entities)]
+      (entity/draw-entity v))))
+
 (defn move [dx dy]
   (let [s (entity/get-entity :player)]
     (if (and (engine/locked?) (seq s))
@@ -80,6 +92,7 @@
          movable? (entity/modify-entity! :player new-s))
         (if movable?
           (do (mapping/draw-current-map)
+              (entity/draw-all-entities)
               (engine/unlock))
           (log "You cannot go that way."))))))
 
@@ -91,7 +104,7 @@
     (if on-exit?
       (if (nil? h)
         (do
-          (log "Entering derelict...")
+          (timed-log "Entering derelict...")
           (entity/unwatch-entities)
           (mapping/set-cell! x y :floor)
           (reset! history {:entities (entity/get-entities)
@@ -102,7 +115,7 @@
           (entity/watch-entities update-health)
           (engine/unlock))
         (do
-          (log "Exiting to sector...")
+          (timed-log "Exiting to sector...")
           (entity/unwatch-entities)
           (entity/clear-entities!)
           (mapping/set-current-map! (:map h))
@@ -112,8 +125,7 @@
             (entity/draw-entity v))
           (reset! history nil)
           (set-player-hp (:ship @status))
-          (entity/watch-entities update-health)
-          (engine/unlock))))))
+          (entity/watch-entities update-health))))))
 
 (defn key-down [e]
   (let [[dx dy] (keycodes/get-direction e)
@@ -140,5 +152,5 @@
      :player (assoc (entity/get-entity :player) :hp ship-orig)))
   (entity/watch-entities update-health)
   (register-handlers)
-  (timed-log "Entering sector... Scanners detect 5 derelicts.")
+  (timed-log "Entering sector... |4 derelicts|1 anomalous signature|Multiple hostiles|")
   (engine/start))

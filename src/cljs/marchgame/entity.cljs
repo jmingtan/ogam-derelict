@@ -45,6 +45,10 @@
 (defn draw-entity-by-id [id]
   (draw-entity (get-entity id)))
 
+(defn draw-all-entities []
+  (doseq [id (keys @entities)]
+    (draw-entity-by-id id)))
+
 (defn create-entity
   ([x y symbol act-fn]
      (create-entity x y symbol "grey"))
@@ -72,8 +76,7 @@
 (defn create-player [x y]
   (create-entity
    x y "@" "white"
-   #(do (draw-entity-by-id :player)
-        (engine/lock))))
+   #(engine/lock)))
 
 (defn enemy-logic [id]
   (let [{px :x py :y} (get-entity :player)
@@ -86,10 +89,9 @@
     (cond
      (> path-len 2) (modify-entity! id new-e)
      (= path-len 2) (if (attack-entity! id :player)
-                      (engine/lock)))
-    (draw-entity-by-id id)))
+                      (engine/lock)))))
 
-(defn create-pedro [x y]
+(defn create-enemy [id x y]
   (create-entity
    x y "P" "red"
-   (partial enemy-logic :pedro)))
+   (partial enemy-logic id)))
