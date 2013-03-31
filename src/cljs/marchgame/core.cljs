@@ -25,7 +25,9 @@
     with-elem))
 
 (defn overhead-map []
-  (let [map-result (-> (mapping/generate-map) (place-elem :loot) (place-elem :exit))]
+  (let [map-result (-> (mapping/generate-map)
+                       (place-elem :loot)
+                       (place-elem :exit))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)

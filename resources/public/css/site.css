@@ -2,3 +2,10 @@
     overflow: auto;
     height: 100px;
 }
+
+#status {
+    margin-top: 10px;
+}
+#status td {
+    padding-left: 10px;
+}

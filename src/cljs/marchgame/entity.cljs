@@ -1,5 +1,6 @@
 (ns marchgame.entity
-  (:use [marchgame.util :only (log)])
+  (:use [marchgame.util :only (log)]
+        [domina :only (by-id)])
   (:require [marchgame.display :as display]
             [marchgame.engine :as engine]
             [marchgame.path :as path]
@@ -45,7 +46,7 @@
      (let [speed-fn (fn [] 100)]
        (create-entity x y symbol colour speed-fn act-fn)))
   ([x y symbol colour speed-fn act-fn]
-     {:x x :y y :symbol symbol :colour colour :hp 10
+     {:x x :y y :symbol symbol :colour colour :hp 10 :start-hp 10
       :actor (js-obj "getSpeed" speed-fn
                      "act" act-fn)}))
 
@@ -63,10 +64,11 @@
         false))))
 
 (defn create-player [x y]
-  (create-entity
-   x y "@" "white"
-   #(do (draw-entity-by-id :player)
-        (engine/lock))))
+  (assoc (create-entity
+          x y "@" "white"
+          #(do (draw-entity-by-id :player)
+               (engine/lock)))
+    :hp 20 :start-hp 20))
 
 (defn enemy-logic [id]
   (let [{px :x py :y} (get-entity :player)
@@ -78,8 +80,12 @@
         path-len (count result-path)]
     (cond
      (> path-len 2) (modify-entity! id new-e)
-     (= path-len 2) (if (attack-entity! id :player)
-                      (engine/lock)))
+     (= path-len 2) (do (if (attack-entity! id :player)
+                          (engine/lock))
+                        (let [elem (by-id "health")
+                              {hp :hp orig :start-hp} (get-entity :player)
+                              line (format "%d/%d" hp orig)]
+                          (set! (.-innerHTML elem) line))))
     (draw-entity-by-id id)))
 
 (defn create-pedro [x y]

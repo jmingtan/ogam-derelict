@@ -36,7 +36,7 @@
 
 (defn generate-cellular-map [callback]
   (let [g (js/ROT.Map.Cellular.)]
-    (.randomize g 0.3)
+    (.randomize g 0.37)
     (dotimes [i 2]
       (.create g (fn [& rest])))
     (.create g callback)))

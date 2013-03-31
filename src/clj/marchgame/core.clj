@@ -20,7 +20,8 @@
     [:div.container
      [:div.row
       [:div#body.span12
-       [:h1 "Derelict"]]
+       [:h1 "Derelict"]]]
+     [:div.row
       [:div.span3
        [:table
         (map (fn [[l m r]] [:tr
@@ -29,7 +30,11 @@
                             [:td r]])
              [[[:button#nw.btn "NW"] [:button#n.btn [:i.icon-caret-up]] [:button#ne.btn "NE"]]
               [[:button#w.btn [:i.icon-caret-left]] [:button#exit.btn [:i.icon-signin]] [:button#e.btn [:i.icon-caret-right]]]
-              [[:button#sw.btn "SW"] [:button#s.btn [:i.icon-caret-down]] [:button#se.btn "SE"]]])]]
+              [[:button#sw.btn "SW"] [:button#s.btn [:i.icon-caret-down]] [:button#se.btn "SE"]]])]
+       [:table#status
+        [:tbody
+         ;; [:tr [:th "Ship"] [:td "35/35"]]
+         [:tr [:th "Player"] [:td#health "20/20"]]]]]
       [:div#message-span.span9
        [:table#messages]]]]
     (include-js "js/rot.js" "js/rogue.js")]))
