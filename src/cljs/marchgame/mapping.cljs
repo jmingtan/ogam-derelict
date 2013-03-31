@@ -5,6 +5,9 @@
 (def map-legend
   {:wall {:symbol "#" :colour "brown" :passable? false}
    :floor {:symbol " " :colour "brown" :passable? true}
+   :aexit {:symbol ">" :colour "purple" :bg "white" :passable? true}
+   :artifact {:symbol "*" :colour "purple" :bg "white" :passable? true}
+   :warp {:symbol "O" :colour "black" :bg "white" :passable? true}
    :exit {:symbol ">" :colour "white" :passable? true}
    :loot {:symbol "$" :colour "yellow" :passable? true}})
 
@@ -45,8 +48,12 @@
   (let [g (js/ROT.Map.Uniform.)]
     (.create g callback)))
 
+(defn generate-divided-map [callback]
+  (let [g (js/ROT.Map.DividedMaze.)]
+    (.create g callback)))
+
 (defn generate-map
-  ([] (generate-map :cell))
+  ([] (generate-map :cellular))
   ([map-type]
      (let [result-map (atom {})
            free-cells (atom {})
@@ -59,15 +66,16 @@
                                              :wall
                                              :floor))))]
        (condp = map-type
-         :cell (generate-cellular-map callback)
+         :cellular (generate-cellular-map callback)
          :uniform (generate-uniform-map callback)
+         :divided (generate-divided-map callback)
          nil)
        {:map-data @result-map :free-cells @free-cells})))
 
 (defn draw-map [map-data]
   (doseq [[x y v] map-data]
-    (let [{s :symbol c :colour} (v map-legend)]
-      (display/draw x y s c))))
+    (let [{s :symbol c :colour b :bg} (v map-legend)]
+      (display/draw x y s c b))))
 
 (defn draw-current-map []
   (draw-map (:_optimized @current-map)))

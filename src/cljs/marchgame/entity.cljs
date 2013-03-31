@@ -50,23 +50,25 @@
     (draw-entity-by-id id)))
 
 (defn create-entity
-  ([x y symbol act-fn]
-     (create-entity x y symbol "grey"))
-  ([x y symbol colour act-fn]
+  ([x y symbol name act-fn]
+     (create-entity x y symbol name "grey"))
+  ([x y symbol name colour act-fn]
      (let [speed-fn (fn [] 100)]
-       (create-entity x y symbol colour speed-fn act-fn)))
-  ([x y symbol colour speed-fn act-fn]
-     {:x x :y y :symbol symbol :colour colour :hp 10
-      :actor (js-obj "getSpeed" speed-fn
-                     "act" act-fn)}))
+       (create-entity x y symbol name colour speed-fn act-fn)))
+  ([x y symbol name colour speed-fn act-fn]
+     {:x x :y y :symbol symbol :colour colour :hp 10 :name name
+      :actor (js-obj "getSpeed" speed-fn "act" act-fn)}))
 
 (defn attack-entity! [src-id tgt-id]
   (let [[src tgt] (map get-entity [src-id tgt-id])
-        tgt-hp (- (:hp tgt) 5)]
-    (log (str (name src-id) " has attacked " (name tgt-id) " (hp left: " tgt-hp ")"))
+        [src-name tgt-name] (map :name [src tgt])
+        dmg (rand-nth (range 5 8))
+        tgt-hp (- (:hp tgt) dmg)]
+    (log (format "%s attacks %s, dealing %d damage (hp left: %d)"
+                 src-name tgt-name dmg tgt-hp))
     (if (<= tgt-hp 0)
       (do
-        (log (str (name tgt-id) " has died!"))
+        (log (str (name tgt-name) " has died!"))
         (remove-entity! tgt-id)
         true)
       (let [new-e (assoc tgt :hp tgt-hp)]
@@ -75,7 +77,7 @@
 
 (defn create-player [x y]
   (create-entity
-   x y "@" "white"
+   x y "@" "Player" "white"
    #(engine/lock)))
 
 (defn enemy-logic [id]
@@ -93,5 +95,5 @@
 
 (defn create-enemy [id x y]
   (create-entity
-   x y "P" "red"
+   x y "P" "Pirate" "red"
    (partial enemy-logic id)))

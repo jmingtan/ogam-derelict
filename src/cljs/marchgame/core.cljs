@@ -33,9 +33,10 @@
    :player (assoc (entity/get-entity :player) :hp hp)))
 
 (defn generate-entities [map-coll]
-  (let [free-loc #(get-location (:free-cells map-coll))]
-    (doseq [[k v] {:player entity/create-player
-                   :pirate (partial entity/create-enemy :pirate)}]
+  (let [free-loc #(get-location (:free-cells map-coll))
+        entities {:player entity/create-player
+                  :pirate (partial entity/create-enemy :pirate)}]
+    (doseq [[k v] entities]
       (entity/add-entity! k (apply v (free-loc))))))
 
 (defn place-elem [{map-data :map-data :as map-coll} elem]
@@ -44,10 +45,14 @@
         with-elem (assoc-in map-coll [:map-data chosen] elem)]
     with-elem))
 
+(defn place-elems [coll n elem]
+  (reduce place-elem coll (repeat n elem)))
+
 (defn overhead-map []
-  (let [map-result (-> (mapping/generate-map)
-                       (place-elem :loot)
-                       (place-elem :exit))]
+  (let [map-result (-> (mapping/generate-map :cellular)
+                       (place-elems (rand-nth (range 4 7)) :loot)
+                       (place-elems 4 :exit)
+                       (place-elem :aexit))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
@@ -56,7 +61,7 @@
 
 (defn derelict-map []
   (let [map-result (-> (mapping/generate-map :uniform)
-                       (place-elem :loot)
+                       (place-elems (rand-nth (range 3 5)) :loot)
                        (place-elem :exit))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
@@ -65,43 +70,25 @@
       (entity/draw-entity v))))
 
 (defn artifact-map []
-  (let [map-result (-> (mapping/generate-map :uniform)
-                       (place-elem :loot)
-                       (place-elem :exit))]
+  (let [map-result (-> (mapping/generate-map :divided)
+                       (place-elems 10 :loot)
+                       (place-elem :artifact))]
     (generate-entities map-result)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
       (entity/draw-entity v))))
 
-(defn move [dx dy]
-  (let [s (entity/get-entity :player)]
-    (if (and (engine/locked?) (seq s))
-      (let [new-x (+ dx (:x s))
-            new-y (+ dy (:y s))
-            new-s (assoc s :x new-x :y new-y)
-            dest-cell (mapping/get-cell new-x new-y)
-            movable? (mapping/is-passable? new-x new-y)
-            entities (entity/has-entity? new-x new-y)]
-        (cond
-         (> (count entities) 0) (entity/attack-entity!
-                                 :player (first (first entities)))
-         (= :loot dest-cell) (do (loot/random-loot!)
-                                 (mapping/set-cell! new-x new-y :floor)
-                                 (entity/modify-entity! :player new-s))
-         movable? (entity/modify-entity! :player new-s))
-        (if movable?
-          (do (mapping/draw-current-map)
-              (entity/draw-all-entities)
-              (engine/unlock))
-          (log "You cannot go that way."))))))
-
 (defn exit []
   (let [{x :x y :y :as s} (entity/get-entity :player)
         current-cell (mapping/get-cell x y)
-        on-exit? (= current-cell :exit)
         h @history]
-    (if on-exit?
+    (condp = current-cell
+      :warp
+      (do
+        (timed-log "You escape from the sector, riches in your grasp!")
+        (loot/calculate-score))
+      :exit
       (if (nil? h)
         (do
           (timed-log "Entering derelict...")
@@ -125,7 +112,51 @@
             (entity/draw-entity v))
           (reset! history nil)
           (set-player-hp (:ship @status))
-          (entity/watch-entities update-health))))))
+          (entity/watch-entities update-health)))
+      :aexit
+      (do
+        (timed-log "Entering anomaly...")
+        (entity/unwatch-entities)
+        (mapping/set-cell! x y :floor)
+        (reset! history {:entities (entity/get-entities)
+                         :map (mapping/get-current-map)})
+        (entity/clear-entities!)
+        (artifact-map)
+        (set-player-hp (:hp @status))
+        (entity/watch-entities update-health)
+        (engine/unlock))
+      nil)))
+
+(defn move [dx dy]
+  (let [s (entity/get-entity :player)]
+    (if (and (engine/locked?) (seq s))
+      (let [new-x (+ dx (:x s))
+            new-y (+ dy (:y s))
+            new-s (assoc s :x new-x :y new-y)
+            dest-cell (mapping/get-cell new-x new-y)
+            movable? (mapping/is-passable? new-x new-y)
+            entities (entity/has-entity? new-x new-y)]
+        (cond
+         (> (count entities) 0) (entity/attack-entity!
+                                 :player (first (first entities)))
+         (= :loot dest-cell) (do (loot/random-loot!)
+                                 (mapping/set-cell! new-x new-y :floor)
+                                 (entity/modify-entity! :player new-s))
+         (= :artifact dest-cell) (do (loot/add-artifact!)
+                                     (timed-log "A mysterious energy surrounds you. You find yourself onboard your ship again.")
+                                     (mapping/set-cell! new-x new-y :exit)
+                                     (entity/modify-entity! :player new-s)
+                                     (exit)
+                                     (timed-log "Escape to the warp point!")
+                                     (-> (mapping/get-current-map)
+                                         (place-elem :warp)
+                                         (mapping/set-current-map!)))
+         movable? (entity/modify-entity! :player new-s))
+        (if movable?
+          (do (mapping/draw-current-map)
+              (entity/draw-all-entities)
+              (engine/unlock))
+          (log "You cannot go that way."))))))
 
 (defn key-down [e]
   (let [[dx dy] (keycodes/get-direction e)
@@ -147,10 +178,11 @@
   (let [player-orig 20
         ship-orig 35]
     (reset! status {:orig-hp player-orig :hp player-orig
-                    :orig-ship ship-orig :ship ship-orig})
+                    :orig-ship ship-orig :ship ship-orig
+                    :artifact? false})
     (entity/modify-entity!
      :player (assoc (entity/get-entity :player) :hp ship-orig)))
   (entity/watch-entities update-health)
   (register-handlers)
-  (timed-log "Entering sector... |4 derelicts|1 anomalous signature|Multiple hostiles|")
+  (timed-log "Scanning sector... |4 derelicts|1 anomalous signature|Multiple hostiles|")
   (engine/start))

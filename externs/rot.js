@@ -16,6 +16,7 @@ ROT.Path.AStar.compute = function() {};
 ROT.RNG = function() {};
 ROT.Map = function() {};
 ROT.Map.Uniform = function() {};
+ROT.Map.DividedMaze = function() {};
 ROT.Map.Cellular = function() {};
 ROT.Map.Cellular.randomize = function() {};
 ROT.Map.Cellular.create = function() {};
