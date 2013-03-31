@@ -11,6 +11,23 @@
             [marchgame.display :as display]))
 
 (def history (atom nil))
+(def health (atom {}))
+
+(defn update-health [key a old new]
+  (let [update-fn (fn [hp-type]
+                    (let [{hp :hp} (:player new)
+                          kw (-> (format "orig-%s" (name hp-type)) keyword)
+                          {orig kw} (swap! health assoc hp-type hp)
+                          elem (by-id (name hp-type))
+                          line (format "%d/%d" hp orig)]
+                      (set! (.-innerHTML elem) line)))]
+    (if (nil? @history)
+      (update-fn :ship)
+      (update-fn :hp))))
+
+(defn set-player-hp [hp]
+  (entity/modify-entity!
+   :player (assoc (entity/get-entity :player) :hp hp)))
 
 (defn generate-entities [map-coll]
   (let [free-loc #(get-location (:free-cells map-coll))]
@@ -74,13 +91,18 @@
       (if (nil? h)
         (do
           (log "Entering derelict...")
+          (entity/unwatch-entities)
           (mapping/set-cell! x y :floor)
           (reset! history {:entities (entity/get-entities)
                            :map (mapping/get-current-map)})
           (entity/clear-entities!)
-          (derelict-map))
+          (derelict-map)
+          (set-player-hp (:hp @health))
+          (entity/watch-entities update-health)
+          (engine/unlock))
         (do
           (log "Exiting to sector...")
+          (entity/unwatch-entities)
           (entity/clear-entities!)
           (mapping/set-current-map! (:map h))
           (mapping/draw-current-map)
@@ -88,6 +110,8 @@
             (entity/add-entity! k v)
             (entity/draw-entity v))
           (reset! history nil)
+          (set-player-hp (:ship @health))
+          (entity/watch-entities update-health)
           (engine/unlock))))))
 
 (defn key-down [e]
@@ -107,5 +131,12 @@
 (defn ^:export init []
   (.appendChild (by-id "body") (display/container))
   (overhead-map)
+  (let [player-orig 20
+        ship-orig 35]
+    (reset! health {:orig-hp player-orig :hp player-orig
+                    :orig-ship ship-orig :ship ship-orig})
+    (entity/modify-entity!
+     :player (assoc (entity/get-entity :player) :hp ship-orig)))
+  (entity/watch-entities update-health)
   (register-handlers)
   (engine/start))

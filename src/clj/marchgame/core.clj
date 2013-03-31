@@ -33,8 +33,8 @@
               [[:button#sw.btn "SW"] [:button#s.btn [:i.icon-caret-down]] [:button#se.btn "SE"]]])]
        [:table#status
         [:tbody
-         ;; [:tr [:th "Ship"] [:td "35/35"]]
-         [:tr [:th "Player"] [:td#health "20/20"]]]]]
+         [:tr [:th "Ship"] [:td#ship "35/35"]]
+         [:tr [:th "Player"] [:td#hp "20/20"]]]]]
       [:div#message-span.span9
        [:table#messages]]]]
     (include-js "js/rot.js" "js/rogue.js")]))
