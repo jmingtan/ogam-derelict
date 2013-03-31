@@ -32,14 +32,21 @@
   (entity/modify-entity!
    :player (assoc (entity/get-entity :player) :hp hp)))
 
-(defn generate-entities [map-coll n]
-  (let [free-loc #(get-location (:free-cells map-coll))
-        pirates (reduce (fn [coll e] (let [k (keyword (format "pirate%d" e))]
-                                       (assoc coll k (partial entity/create-enemy k))))
-                        {} (range n))
-        entities (assoc pirates :player entity/create-player)]
-    (doseq [[k v] entities]
-      (entity/add-entity! k (apply v (free-loc))))))
+(defn generate-enemies [n radius]
+  (reduce (fn [coll e] (let [k (keyword (format "pirate%d" e))]
+                         (assoc coll k (partial entity/create-enemy k radius))))
+          {} (range n)))
+
+(defn generate-entities
+  ([map-coll n radius] (generate-entities map-coll true n radius))
+  ([map-coll player? n radius]
+     (let [free-loc #(get-location (:free-cells map-coll))
+           pirates (generate-enemies n radius)
+           entities (if player?
+                      (assoc pirates :player entity/create-player)
+                      pirates)]
+       (doseq [[k v] entities]
+         (entity/add-entity! k (apply v (free-loc)))))))
 
 (defn place-elem [{map-data :map-data :as map-coll} elem]
   (let [free-loc #(get-location (:free-cells map-coll))
@@ -55,7 +62,7 @@
                        (place-elems (rand-nth (range 4 7)) :loot)
                        (place-elems 4 :exit)
                        (place-elem :aexit))]
-    (generate-entities map-result 1)
+    (generate-entities map-result (rand-nth (range 3 6)) 30)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
@@ -65,7 +72,7 @@
   (let [map-result (-> (mapping/generate-map :uniform)
                        (place-elems (rand-nth (range 3 5)) :loot)
                        (place-elem :exit))]
-    (generate-entities map-result 1)
+    (generate-entities map-result (rand-nth (range 1 3)) 10)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
@@ -75,7 +82,7 @@
   (let [map-result (-> (mapping/generate-map :divided)
                        (place-elems 10 :loot)
                        (place-elem :artifact))]
-    (generate-entities map-result 1)
+    (generate-entities map-result (rand-nth (range 3 5)) 0)
     (mapping/set-current-map! map-result)
     (mapping/draw-current-map)
     (doseq [[k v] (entity/get-entities)]
@@ -139,7 +146,11 @@
             new-s (assoc s :x new-x :y new-y)
             dest-cell (mapping/get-cell new-x new-y)
             movable? (mapping/is-passable? new-x new-y)
-            entities (entity/has-entity? new-x new-y)]
+            entities (entity/has-entity? new-x new-y)
+            {steps :steps orig-hp :orig-hp orig-ship :orig-ship} @status
+            hp (:hp s)
+            hp-recover? (= (mod steps 8) 0)]
+        (swap! status assoc :steps (inc steps))
         (cond
          (> (count entities) 0) (entity/attack-entity!
                                  :player (first (first entities)))
@@ -148,19 +159,33 @@
                                  (entity/modify-entity! :player new-s))
          (= :artifact dest-cell) (do (loot/add-artifact!)
                                      (timed-log "A mysterious energy surrounds you. You find yourself onboard your ship again.")
-                                     (mapping/set-cell! new-x new-y :exit)
-                                     (entity/modify-entity! :player new-s)
-                                     (exit)
                                      (timed-log "Escape to the warp point!")
-                                     (-> (mapping/get-current-map)
-                                         (place-elem :warp)
-                                         (mapping/set-current-map!)))
+                                     (do
+                                       (entity/unwatch-entities)
+                                       (entity/clear-entities!)
+                                       (mapping/set-current-map! (place-elem (:map @history) :warp))
+                                       (mapping/draw-current-map)
+                                       (doseq [[k v] (merge (generate-entities (:map @history) false 10 0) (:entities @history))]
+                                       ;; (doseq [[k v] (:entities @history)]
+                                         (entity/add-entity! k v)
+                                         (entity/draw-entity v))
+                                       (reset! history nil)
+                                       (set-player-hp (:ship @status))
+                                       (entity/watch-entities update-health)))
          movable? (entity/modify-entity! :player new-s))
         (if movable?
           (do (mapping/draw-current-map)
               (entity/draw-all-entities)
               (engine/unlock))
-          (log "You cannot go that way."))))))
+          (log "You cannot go that way."))
+        (if (and hp-recover? (> hp 0))
+          (let [add-hp (rand-nth (range 2 5))]
+            (condp = (:location @status)
+              :space (if (< hp orig-ship)
+                       (set-player-hp (+ hp add-hp)))
+              :land (if (< hp orig-hp)
+                      (set-player-hp (+ hp add-hp)))
+             nil)))))))
 
 (defn key-down [e]
   (let [[dx dy] (keycodes/get-direction e)
@@ -179,11 +204,11 @@
 (defn ^:export init []
   (.appendChild (by-id "body") (display/container))
   (overhead-map)
-  (let [player-orig 20
-        ship-orig 35]
+  (let [player-orig 2000
+        ship-orig 3500]
     (reset! status {:orig-hp player-orig :hp player-orig
                     :orig-ship ship-orig :ship ship-orig
-                    :artifact? false})
+                    :artifact? false :steps 0 :location :space})
     (entity/modify-entity!
      :player (assoc (entity/get-entity :player) :hp ship-orig)))
   (entity/watch-entities update-health)

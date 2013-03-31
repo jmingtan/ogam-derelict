@@ -80,7 +80,7 @@
    x y "@" "Player" "white"
    #(engine/lock)))
 
-(defn enemy-logic [id]
+(defn enemy-logic [id radius]
   (let [{px :x py :y} (get-entity :player)
         {x :x y :y :as entity} (get-entity id)
         finder (path/astar px py mapping/is-passable?)
@@ -89,11 +89,14 @@
         new-e (assoc entity :x new-x :y new-y)
         path-len (count result-path)]
     (cond
+     (and (pos? radius) (>= path-len radius)) nil
      (> path-len 2) (modify-entity! id new-e)
      (= path-len 2) (if (attack-entity! id :player)
                       (engine/lock)))))
 
-(defn create-enemy [id x y]
-  (create-entity
-   x y "P" "Pirate" "red"
-   (partial enemy-logic id)))
+(defn create-enemy
+  ([id x y] (create-enemy id 0 x y))
+  ([id radius x y]
+     (create-entity
+      x y "P" "Pirate" "red"
+      (partial enemy-logic id radius))))
