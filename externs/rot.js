@@ -19,3 +19,4 @@ ROT.Map.Uniform = function() {};
 ROT.Map.Cellular = function() {};
 ROT.Map.Cellular.randomize = function() {};
 ROT.Map.Cellular.create = function() {};
+var displayText = function() {};

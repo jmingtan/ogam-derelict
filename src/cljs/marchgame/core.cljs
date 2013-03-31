@@ -1,5 +1,5 @@
 (ns marchgame.core
-  (:use [marchgame.util :only (log get-location unpack-location)]
+  (:use [marchgame.util :only (log timed-log get-location unpack-location)]
         [domina :only (by-id)])
   (:require [domina.events :as ev]
             [marchgame.path :as path]
@@ -139,4 +139,5 @@
      :player (assoc (entity/get-entity :player) :hp ship-orig)))
   (entity/watch-entities update-health)
   (register-handlers)
+  (timed-log "Entering sector... Scanners detect 5 derelicts.")
   (engine/start))

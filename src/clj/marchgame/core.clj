@@ -39,7 +39,7 @@
          [:tr [:td#treasure {:colspan 2} "None"]]]]]
       [:div#message-span.span9
        [:table#messages]]]]
-    (include-js "js/rot.js" "js/rogue.js")]))
+    (include-js "js/rot.js" "js/rogue.js" "js/typewriter.js")]))
 
 (defroutes app-routes
   (GET "/" [] (page-index))
