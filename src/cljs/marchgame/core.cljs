@@ -16,6 +16,7 @@
 (defn update-health [key a old new]
   (let [update-fn (fn [hp-type]
                     (let [{hp :hp} (:player new)
+                          hp (or hp 0)
                           kw (-> (format "orig-%s" (name hp-type)) keyword)
                           {orig kw} (swap! status assoc hp-type hp)
                           elem (by-id (name hp-type))
